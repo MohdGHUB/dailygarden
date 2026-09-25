@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Daily Garden">
+<meta name="theme-color" content="#FBF6EC">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Daily Garden</title>
+<style>
+:root{
+  --bg:#FBF6EC; --ink:#1E1B16; --soft:#5E5648; --card:#FFFFFF; --line:#D8CCB6;
+  --green:#2F6B3A; --green2:#3F8A4C; --greenDark:#1F4A27; --gold:#F2B705;
+  --blue:#2457A6; --done:#E4F1E0; --rose:#C8465B; --roseDark:#8F2F40;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Rounded","Segoe UI",Roboto,Arial,sans-serif;
+  overscroll-behavior:none;touch-action:manipulation}
+body{position:fixed;inset:0;overflow:hidden}
+button{font-family:inherit;color:inherit;cursor:pointer}
+.emo,.pcell,.slot .se,.startIcon,.garden,.minigarden,.pbig{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+
+.screen{position:absolute;inset:0;display:none;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+.screen.on{display:flex}
+
+/* Hidden caregiver corner: hold for 3 seconds */
+#corner{position:fixed;top:0;right:0;width:76px;height:calc(env(safe-area-inset-top) + 76px);z-index:60}
+
+/* Home */
+.hdr{display:flex;align-items:baseline;gap:6px;font-size:17px;color:var(--soft);font-weight:600;min-height:28px}
+.ver{font-size:11px;opacity:.45;font-weight:500}
+.hello{text-align:center;margin-top:3vh}
+.greet{font-size:40px;font-weight:800;line-height:1.1}
+.sub{font-size:24px;color:var(--soft);margin-top:10px;line-height:1.3}
+.start{flex:1;max-height:44vh;min-height:200px;margin:4vh 0 3vh;border:0;border-radius:36px;background:var(--green);color:#fff;
+  font-size:54px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 10px 0 var(--greenDark)}
+.start:active{transform:translateY(6px);box-shadow:0 4px 0 var(--greenDark)}
+.startIcon{font-size:96px;line-height:1}
+.minigarden{text-align:center;font-size:30px;letter-spacing:2px;line-height:1.3}
+.gnote{font-size:20px;color:var(--soft);text-align:center;margin-top:6px}
+
+/* Play */
+.topbar{display:flex;align-items:center;gap:14px;height:68px;padding-right:66px}
+.say{width:76px;height:62px;border-radius:20px;border:3px solid var(--line);background:var(--card);font-size:32px;box-shadow:0 4px 0 var(--line)}
+.say:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.dots{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--line)}
+.dot.done{background:var(--green2)}
+.dot.now{background:var(--gold);transform:scale(1.25)}
+.prompt{font-size:30px;font-weight:750;line-height:1.25;text-align:center;margin:8px 4px 14px;min-height:76px;display:flex;align-items:center;justify-content:center}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
+.grid{flex:1;min-height:0;display:grid;gap:14px}
+.g2x1{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+.g1x3{grid-template-columns:1fr;grid-template-rows:repeat(3,1fr)}
+.g2x2{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.g2x3{grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr)}
+
+.card{position:relative;border:4px solid var(--line);border-radius:26px;background:var(--card);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;
+  min-height:0;min-width:0;overflow:hidden;box-shadow:0 4px 0 var(--line);transition:transform .15s,background .3s,opacity .4s}
+button.card:active{transform:scale(.97)}
+.emo{font-size:min(17vw,9vh);line-height:1.1}
+.lbl{font-size:24px;font-weight:700;line-height:1.1;text-align:center}
+.g1x3 .card{flex-direction:row;gap:18px;justify-content:flex-start;padding-left:22px}
+.g1x3 .emo{font-size:min(15vw,8vh)}
+.g1x3 .lbl{font-size:28px;text-align:left}
+.card.sel{border-color:var(--blue);box-shadow:0 0 0 5px var(--blue)}
+.card.right{border-color:var(--green2);background:var(--done)}
+.card.matched{border-color:var(--green2);background:var(--done);opacity:.6}
+.card.matched::after{content:"\2713";position:absolute;top:4px;right:12px;font-size:30px;font-weight:800;color:var(--green)}
+.card.used{visibility:hidden}
+.card.down{background:#7FA879;border-color:#5C8656;box-shadow:0 4px 0 #5C8656}
+.card.down > *{visibility:hidden}
+.card.down::before{content:"\1F33F";position:absolute;font-size:52px}
+.card.photo{padding:0}
+.card.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card.photo .lbl{position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.88);padding:6px 4px;font-size:22px}
+.g1x3 .card.photo{padding:0}
+
+.glow{animation:glow 1.4s ease-in-out infinite;border-color:var(--gold)!important}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(242,183,5,0)}50%{box-shadow:0 0 0 12px rgba(242,183,5,.55)}}
+
+/* Goes together */
+.tgtRow{flex:0 0 30%;display:flex;align-items:center;justify-content:center;gap:12px;min-height:0}
+.tgtRow .card{width:56%;height:100%;box-shadow:none;border-style:solid}
+.plusq{font-size:44px;font-weight:800;color:var(--soft)}
+
+/* Pattern */
+.prow{display:flex;justify-content:center;gap:5px;flex-wrap:nowrap;padding:6px 0 4px}
+.pcell{width:min(13vw,62px);height:min(13vw,62px);flex:0 0 auto;border-radius:16px;background:var(--card);border:3px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:min(9vw,40px)}
+.pcell.q{border-style:dashed;border-color:var(--gold);border-width:4px;font-family:inherit;font-weight:800;color:var(--soft)}
+.pcell.q.filled{border-style:solid;border-color:var(--green2);background:var(--done);font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif}
+
+/* Sequence */
+.slots{display:flex;gap:8px;justify-content:center}
+.slot{flex:1;max-width:88px;height:96px;border:3px dashed var(--line);border-radius:16px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:28px;color:var(--soft);font-weight:800;background:rgba(255,255,255,.55)}
+.slot.full{border-style:solid;border-color:var(--green2);background:var(--done);color:var(--ink)}
+.slot .se{font-size:min(10vw,42px);line-height:1.1}
+.slot .sn{font-size:15px}
+
+/* Photos */
+.bigphoto{flex:1;min-height:0;border-radius:26px;overflow:hidden;border:4px solid var(--line);background:#eee}
+.bigphoto img{width:100%;height:100%;object-fit:cover;display:block}
+.pname{font-size:38px;font-weight:800;text-align:center}
+.heart{height:108px;flex:0 0 108px;border-radius:30px;border:4px solid transparent;background:var(--rose);color:#fff;font-size:36px;font-weight:800;box-shadow:0 8px 0 var(--roseDark)}
+.heart:active{transform:translateY(5px);box-shadow:0 3px 0 var(--roseDark)}
+
+/* Praise overlay */
+.praise{position:fixed;inset:0;background:rgba(251,246,236,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:40}
+.praise.on{display:flex}
+.pbig{font-size:130px;line-height:1;animation:pop .7s ease-out}
+.ptext{font-size:50px;font-weight:800;color:var(--green);margin-top:18px}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+
+/* End */
+.endT{font-size:46px;font-weight:800;text-align:center;margin-top:3vh}
+.endS{font-size:24px;color:var(--soft);text-align:center;margin-top:8px;line-height:1.3}
+.garden{flex:1;min-height:0;display:flex;flex-wrap:wrap;align-content:flex-end;justify-content:center;gap:4px 8px;font-size:46px;
+  background:linear-gradient(#FBF6EC 0%,#EAF2DC 70%,#CFE2B8 100%);border-radius:30px;margin:3vh 0;padding:16px;overflow:hidden}
+.garden .new{animation:grow 1.8s ease-out}
+@keyframes grow{0%{transform:scale(0) translateY(30px);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+.big{height:112px;flex:0 0 112px;border:0;border-radius:30px;background:var(--green);color:#fff;font-size:44px;font-weight:800;box-shadow:0 8px 0 var(--greenDark)}
+.big:active{transform:translateY(5px);box-shadow:0 3px 0 var(--greenDark)}
+
+/* Caregiver */
+#care{background:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:calc(env(safe-area-inset-bottom) + 40px)}
+#care.on{display:block}
+#care, #care *{-webkit-user-select:text;user-select:text}
+#care h1{font-size:24px;margin:8px 0 2px}
+#care h2{font-size:19px;margin:0 0 8px}
+#care p,.note{font-size:16px;color:#554c3f;line-height:1.45;margin:6px 0}
+.cs{border:1px solid #E5DCCB;border-radius:14px;padding:14px;margin:14px 0;background:#FFFDF8}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #F0E9DC;font-size:17px}
+.row:last-child{border-bottom:0}
+.row label{display:flex;align-items:center;gap:10px}
+.row input[type=checkbox]{width:24px;height:24px}
+select,#care input[type=text]{font-size:17px;padding:8px 10px;border-radius:10px;border:1px solid #CFC3AD;background:#fff;color:var(--ink)}
+.btn{font-size:17px;padding:11px 16px;border-radius:12px;border:1px solid #CFC3AD;background:#F7F2E8;margin:4px 6px 4px 0}
+.btn.pri{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.bad{color:#A33}
+.btn.wide{width:100%;font-size:20px;padding:16px;font-weight:700}
+.ph{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid #F0E9DC}
+.ph img{width:60px;height:60px;object-fit:cover;border-radius:12px;flex:0 0 60px}
+.ph .nm{flex:1;font-size:18px;font-weight:600}
+.phform{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.phform img{width:140px;height:140px;object-fit:cover;border-radius:14px}
+.bars{display:flex;gap:4px;align-items:flex-end;height:90px;margin-top:8px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar{width:100%;background:var(--green2);border-radius:4px 4px 0 0;min-height:2px}
+.bday{font-size:11px;color:#8a806f;margin-top:3px}
+ol.tips{padding-left:20px;margin:6px 0}
+ol.tips li{font-size:16px;line-height:1.45;margin:6px 0;color:#3d362c}
+
+@media (prefers-reduced-motion:reduce){
+  .glow{animation:none;box-shadow:0 0 0 8px rgba(242,183,5,.6)}
+  .pbig,.garden .new{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="corner" aria-hidden="true"></div>
+
+<!-- HOME -->
+<section id="home" class="screen on">
+  <header class="hdr"><span>Daily Garden</span><span class="ver">v1.0</span></header>
+  <div class="hello">
+    <div id="greet" class="greet">Hello</div>
+    <div class="sub">Ready for some gentle games?</div>
+  </div>
+  <button id="startBtn" class="start" aria-label="Start"><span class="startIcon">🌷</span><span>Start</span></button>
+  <div id="homeGarden" class="minigarden"></div>
+  <div id="homeNote" class="gnote"></div>
+</section>
+
+<!-- PLAY -->
+<section id="play" class="screen">
+  <div class="topbar">
+    <button id="sayBtn" class="say" aria-label="Hear it again">🔊</button>
+    <div id="dots" class="dots"></div>
+  </div>
+  <div id="prompt" class="prompt"></div>
+  <div id="stage" class="stage"></div>
+</section>
+
+<!-- PRAISE -->
+<div id="praise" class="praise"><div id="picon" class="pbig">🌟</div><div id="ptext" class="ptext">Wonderful!</div></div>
+
+<!-- END -->
+<section id="end" class="screen">
+  <div class="endT">You did it!</div>
+  <div class="endS">A new flower grew in your garden.</div>
+  <div id="garden" class="garden"></div>
+  <button id="doneBtn" class="big">Done</button>
+</section>
+
+<!-- CAREGIVER -->
+<section id="care" class="screen">
+  <h1>Family settings <span class="ver">v1.0</span></h1>
+  <p>This page is for family only. She will not see it unless someone holds the top right corner for 3 seconds.</p>
+  <button id="careBack" class="btn pri wide">Back to her app</button>
+  <div id="careBody"></div>
+  <button id="careBack2" class="btn pri wide">Back to her app</button>
+</section>
+
+<input id="photoFile" type="file" accept="image/*" hidden>
+
+<script>
+/* =========================================================
+   Daily Garden v1.0
+   Gentle brain games for someone living with Alzheimer's.
+   Offline, no accounts, nothing leaves the phone.
+   ========================================================= */
+var VERSION = '1.0';
+var KEY = 'dg_state_v1';
+var LANG = 'en'; // Arabic to be added later: every spoken/visible phrase lives in STR or the content lists
+
+var STR = { en: {
+  morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening',
+  begin:"Let's begin.",
+  pairsUp:'Find two pictures that are the same.',
+  pairsDown:'Find two cards that match. Tap a card to turn it over.',
+  peek:"Let's take a peek.",
+  odd:'Which one is different?',
+  pattern:'What comes next?',
+  next:'What happens next?',
+  first:'What happens first?',
+  heart:'Tap the heart.',
+  lovely:'❤️  Lovely',
+  endSay:'You did it! A new flower grew in your garden. See you next time.'
+}};
+function T(k){ return (STR[LANG] && STR[LANG][k]) || STR.en[k] || k; }
+
+var PRAISE = ['Wonderful!','Well done!','Lovely!','Beautiful!','Perfect!','Very good!','You did it!'];
+var PICONS = ['🌟','🌷','🌻','💐','🌼','⭐','🌸'];
+var FLOWERS = ['🌷','🌻','🌼','🌸','🌹','🌺','💐'];
+
+/* ---------------- Content ---------------- */
+function mk(list){ return list.map(function(x){ return { e:x[0], n:x[1] }; }); }
+var CATS = {
+  fruit:   { pl:'fruit',      items: mk([['🍎','Apple'],['🍌','Banana'],['🍊','Orange'],['🍇','Grapes'],['🍉','Watermelon'],['🍓','Strawberry'],['🍐','Pear'],['🍒','Cherries']]) },
+  veg:     { pl:'vegetables', items: mk([['🥕','Carrot'],['🥔','Potato'],['🧅','Onion'],['🥦','Broccoli'],['🥬','Lettuce'],['🧄','Garlic'],['🥒','Cucumber']]) },
+  clothes: { pl:'clothes',    items: mk([['👕','Shirt'],['👗','Dress'],['👖','Trousers'],['🧦','Socks'],['🧣','Scarf'],['🧥','Coat'],['👒','Hat'],['👞','Shoes']]) },
+  animals: { pl:'animals',    items: mk([['🐈','Cat'],['🐕','Dog'],['🐄','Cow'],['🐎','Horse'],['🐑','Sheep'],['🐇','Rabbit']]) },
+  vehicles:{ pl:'things we travel in', items: mk([['🚗','Car'],['🚌','Bus'],['🚲','Bicycle'],['✈️','Aeroplane'],['🚢','Ship'],['🚂','Train']]) },
+  kitchen: { pl:'things for the kitchen', items: mk([['🥄','Spoon'],['🍴','Fork'],['☕','Cup'],['🫖','Teapot'],['🍳','Pan'],['🥣','Bowl']]) },
+  flowers: { pl:'flowers',    items: mk([['🌹','Rose'],['🌷','Tulip'],['🌻','Sunflower'],['🌼','Daisy'],['🌸','Blossom'],['🌺','Hibiscus']]) }
+};
+var CLOSE = { fruit:['veg'], veg:['fruit'], flowers:['fruit','veg'] };
+
+var PAIRPOOL = [].concat(CATS.fruit.items, CATS.animals.items, CATS.flowers.items, CATS.kitchen.items, CATS.vehicles.items, CATS.clothes.items);
+
+// [emoji, name, partner emoji, partner name]
+var TOG = [
+  ['☕','Cup','🫖','Teapot'], ['🔑','Key','🚪','Door'], ['🧦','Sock','👟','Shoe'], ['✏️','Pencil','📄','Paper'],
+  ['🐝','Bee','🌻','Flower'], ['🌧️','Rain','☂️','Umbrella'], ['🍞','Bread','🧈','Butter'], ['🐄','Cow','🥛','Milk'],
+  ['🥄','Spoon','🥣','Bowl'], ['🐕','Dog','🦴','Bone'], ['🎂','Cake','🕯️','Candle'], ['🧵','Thread','🪡','Needle'],
+  ['🐟','Fish','🌊','Sea'], ['🖌️','Brush','🎨','Paint'], ['✉️','Letter','📮','Postbox'], ['🐔','Hen','🥚','Egg'],
+  ['🌙','Moon','⭐','Stars']
+];
+// Wrong choices for "what goes together": everyday things that do not pair with any target above
+var NEUTRAL = mk([['🚗','Car'],['🧸','Teddy bear'],['🪑','Chair'],['🕰️','Clock'],['🌵','Cactus'],['🎸','Guitar'],
+  ['🚲','Bicycle'],['👓','Glasses'],['🧲','Magnet'],['🔨','Hammer'],['🧩','Puzzle'],['🪁','Kite']]);
+
+var SYM = [
+  {e:'🔴',n:'Red',s:'the red circle'}, {e:'🔵',n:'Blue',s:'the blue circle'}, {e:'🟡',n:'Yellow',s:'the yellow circle'},
+  {e:'🟢',n:'Green',s:'the green circle'}, {e:'⭐',n:'Star',s:'the star'}, {e:'❤️',n:'Heart',s:'the heart'},
+  {e:'🍎',n:'Apple',s:'the apple'}, {e:'🌙',n:'Moon',s:'the moon'}
+];
+
+var SEQ3 = [
+  {t:'Growing a flower', s:[['🌱','Plant the seed'],['💧','Water it'],['🌷','A flower grows']]},
+  {t:'Washing hands',    s:[['🚰','Turn on the tap'],['🧼','Wash with soap'],['🧻','Dry your hands']]},
+  {t:'A chick is born',  s:[['🥚','An egg'],['🐣','The chick hatches'],['🐔','It grows into a hen']]},
+  {t:'The morning',      s:[['🛏️','Wake up'],['🪥','Brush your teeth'],['🍳','Eat breakfast']]},
+  {t:'Cooking dinner',   s:[['🛒','Buy the food'],['🍲','Cook the food'],['🍽️','Eat dinner']]},
+  {t:'The day',          s:[['🌅','Sunrise'],['☀️','Midday'],['🌙','Night']]},
+  {t:'Sending a letter', s:[['✍️','Write the letter'],['✉️','Put it in an envelope'],['📮','Post it']]}
+];
+var SEQ4 = [
+  {t:'Making tea',        s:[['🚰','Fill the kettle'],['🔥','Boil the water'],['🫖','Pour the tea'],['☕','Drink the tea']]},
+  {t:'Getting ready',     s:[['🛏️','Wake up'],['🚿','Have a wash'],['👗','Get dressed'],['🍳','Eat breakfast']]},
+  {t:'Baking a cake',     s:[['🥚','Get the eggs'],['🥣','Mix everything'],['🔥','Bake in the oven'],['🎂','Eat the cake']]},
+  {t:'Doing the washing', s:[['👕','Dirty clothes'],['🧺','Wash them'],['☀️','Hang them to dry'],['👔','Fold them']]},
+  {t:'Growing a flower',  s:[['🌱','Plant the seed'],['💧','Water it'],['🌿','It starts to grow'],['🌷','A flower opens']]},
+  {t:'Going shopping',    s:[['📝','Write a list'],['🛒','Go to the shop'],['🛍️','Carry the bags'],['🏠','Come home']]}
+];
+
+var MODS = ['photos','pairs','together','seq','pattern','odd'];
+var MOD_NAME = { photos:'Family photos', pairs:'Find the pair', together:'What goes together',
+  seq:'Put the steps in order', pattern:'Finish the pattern', odd:'Which one is different' };
+
+/* ---------------- State ---------------- */
+var DEF = {
+  settings:{ speech:true, rate:0.85, perSession:4, rounds:2,
+    mods:{ photos:true, pairs:true, together:true, seq:true, pattern:true, odd:true }, fixed:{} },
+  levels:{ photos:1, pairs:1, together:1, seq:1, pattern:1, odd:1 },
+  hist:{}, days:{}, flowers:0
+};
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function merge(d,o){ var r=clone(d); for(var k in o){ if(o[k] && typeof o[k]==='object' && !Array.isArray(o[k]) && r[k] && typeof r[k]==='object' && !Array.isArray(r[k])) r[k]=merge(r[k],o[k]); else r[k]=o[k]; } return r; }
+function load(){ try{ var j=JSON.parse(localStorage.getItem(KEY)); if(j) return merge(DEF,j); }catch(e){} return clone(DEF); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+var S = load();
+function lvl(m){ return parseInt(S.settings.fixed[m],10) || S.levels[m] || 1; }
+
+/* ---------------- Photos (IndexedDB, on this phone only) ---------------- */
+var PHOTOS = [];
+function idb(cb){
+  try{
+    var r = indexedDB.open('dailygarden',1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore('photos',{keyPath:'id'}); };
+    r.onsuccess = function(){ cb(r.result); };
+    r.onerror = function(){ cb(null); };
+  }catch(e){ cb(null); }
+}
+function loadPhotos(cb){
+  idb(function(db){
+    if(!db){ if(cb) cb(); return; }
+    var out=[];
+    try{
+      var q = db.transaction('photos','readonly').objectStore('photos').openCursor();
+      q.onsuccess = function(e){ var c=e.target.result; if(c){ out.push(c.value); c.continue(); } else { PHOTOS = out.sort(function(a,b){return a.t-b.t;}); if(cb) cb(); } };
+      q.onerror = function(){ if(cb) cb(); };
+    }catch(e){ if(cb) cb(); }
+  });
+}
+function putPhoto(p,cb){ idb(function(db){ if(!db){ cb(false); return; } var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').put(p); tx.oncomplete=function(){cb(true);}; tx.onerror=function(){cb(false);}; }); }
+function delPhoto(id,cb){ idb(function(db){ if(!db){ cb(); return; } var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete=cb; tx.onerror=cb; }); }
+
+/* ---------------- Sound ---------------- */
+var AC = null;
+function audioInit(){
+  try{ if(!AC){ var C=window.AudioContext||window.webkitAudioContext; if(C) AC=new C(); } if(AC && AC.state==='suspended') AC.resume(); }catch(e){}
+}
+function tone(f,t0,dur,vol){
+  try{
+    var o=AC.createOscillator(), g=AC.createGain();
+    o.type='sine'; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol,t0+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0+dur+0.05);
+  }catch(e){}
+}
+function tick(){ if(AC) tone(520,AC.currentTime,0.12,0.04); }
+function chime(){ if(!AC) return; var t=AC.currentTime; tone(659,t,0.6,0.16); tone(880,t+0.14,0.8,0.14); }
+function softChime(){ if(!AC) return; tone(784,AC.currentTime,0.45,0.1); }
+function bigChime(){ if(!AC) return; var t=AC.currentTime; [523,659,784,1047].forEach(function(f,i){ tone(f,t+i*0.16,0.9,0.13); }); }
+
+/* ---------------- Speech ---------------- */
+var VOICE = null;
+function pickVoice(){
+  try{
+    var vs = speechSynthesis.getVoices() || [];
+    var en = vs.filter(function(v){ return /^en/i.test(v.lang); });
+    var pref = ['Samantha','Karen','Moira','Serena','Kate','Tessa','Daniel'];
+    VOICE = null;
+    for(var i=0;i<pref.length && !VOICE;i++){ for(var j=0;j<en.length;j++){ if(en[j].name.indexOf(pref[i])===0){ VOICE=en[j]; break; } } }
+    if(!VOICE && en.length) VOICE = en[0];
+  }catch(e){}
+}
+function say(text, cb){
+  var done=false; function fin(){ if(done) return; done=true; if(cb) cb(); }
+  if(!S.settings.speech || !window.speechSynthesis || !text){ if(cb) setTimeout(fin,500); return; }
+  try{
+    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    if(VOICE){ u.voice=VOICE; u.lang=VOICE.lang; } else { u.lang='en-GB'; }
+    u.rate = S.settings.rate; u.pitch = 1; u.volume = 1;
+    u.onend = fin; u.onerror = fin;
+    if(cb) setTimeout(fin, 1800 + text.length*95/S.settings.rate);
+    speechSynthesis.speak(u);
+  }catch(e){ if(cb) setTimeout(fin,500); }
+}
+function hush(){ try{ speechSynthesis.cancel(); }catch(e){} }
+
+/* ---------------- Helpers ---------------- */
+function $(id){ return document.getElementById(id); }
+function div(cls,text){ var d=document.createElement('div'); d.className=cls; if(text!=null) d.textContent=text; return d; }
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function lc(s){ return String(s).toLowerCase(); }
+function pad(n){ return (n<10?'0':'')+n; }
+function dkey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+var recent = {};
+function pickFresh(key, arr){
+  var r = recent[key] || []; var c = arr.filter(function(x){ return r.indexOf(x)<0; });
+  if(!c.length){ c=arr.slice(); r=[]; }
+  var x = pick(c); r.push(x); if(r.length > Math.min(4, arr.length-1)) r.shift(); recent[key]=r; return x;
+}
+function show(id){
+  ['home','play','end','care'].forEach(function(s){ $(s).classList.toggle('on', s===id); });
+}
+function isOn(id){ return $(id).classList.contains('on'); }
+
+var lastTap = 0, busy = false;
+function onTap(el, fn){
+  el.addEventListener('click', function(e){
+    var n = Date.now();
+    if(n - lastTap < 380) return;   // ignore shaky double taps
+    lastTap = n;
+    if(busy) return;
+    armIdle();
+    fn(e);
+  });
+}
+function card(it, tag){
+  var b = document.createElement(tag||'button');
+  b.className = 'card' + (it.img ? ' photo' : '');
+  if(it.img){ var im=document.createElement('img'); im.src=it.img; im.alt=''; b.appendChild(im); }
+  else { var e=document.createElement('span'); e.className='emo'; e.textContent=it.e; b.appendChild(e); }
+  if(it.n && !it.nolabel){ var l=document.createElement('span'); l.className='lbl'; l.textContent=it.n; b.appendChild(l); }
+  return b;
+}
+function mkGrid(parent, n){
+  var g = document.createElement('div');
+  g.className = 'grid ' + (n<=2 ? 'g2x1' : n===3 ? 'g1x3' : n===4 ? 'g2x2' : 'g2x3');
+  parent.appendChild(g); return g;
+}
+function setStage(){ var s=$('stage'); s.innerHTML=''; return s; }
+function glow(els){ clearGlow(); els.forEach(function(e){ if(e) e.classList.add('glow'); }); }
+function clearGlow(){ var g=document.querySelectorAll('.glow'); for(var i=0;i<g.length;i++) g[i].classList.remove('glow'); }
+
+/* ---------------- Round engine (errorless) ---------------- */
+var R = null;
+function newRound(mod){ R = { mod:mod, tries:0, st:0, instr:'', hint:function(){}, done:false }; return R; }
+function ask(speech, display){
+  R.instr = speech;
+  $('prompt').textContent = display || speech;
+  say(speech); armIdle();
+}
+// A wrong tap: never punished. 1st = gentle glow on the answer, 2nd = glow + spoken hint, 3rd = the app does it for her.
+function miss(){ if(!R || R.done) return; R.tries++; R.st++; R.hint(Math.min(R.st,3)); }
+function stepOk(){ if(R) R.st=0; clearGlow(); }
+
+var idleT = null;
+function armIdle(){
+  clearTimeout(idleT);
+  idleT = setTimeout(function(){
+    if(R && !R.done && isOn('play') && !busy){ R.hint(2); armIdle(); }
+  }, 45000);
+}
+function clearIdle(){ clearTimeout(idleT); }
+
+function roundDone(){
+  if(!R || R.done) return;
+  R.done = true; clearIdle(); clearGlow();
+  record(R.mod, R.tries);
+  busy = true; chime();
+  setTimeout(function(){
+    var p = pick(PRAISE);
+    $('ptext').textContent = p;
+    var ic = $('picon'); ic.textContent = pick(PICONS); ic.style.animation='none'; void ic.offsetHeight; ic.style.animation='';
+    $('praise').classList.add('on'); say(p);
+    setTimeout(function(){ $('praise').classList.remove('on'); busy=false; nextTask(); }, 2600);
+  }, 700);
+}
+
+function dayRec(){ var k=dkey(new Date()); return S.days[k] || (S.days[k]={s:0,r:0,f:0,m:0}); }
+// Difficulty adjusts quietly: 3 perfect rounds in a row = one step up, 2 hard rounds in a row = one step down
+function record(mod, tries){
+  var D = dayRec(); D.r++; if(tries===0) D.f++;
+  var h = S.hist[mod] || (S.hist[mod]=[]);
+  h.push(tries); if(h.length>8) h.shift();
+  if(!S.settings.fixed[mod]){
+    var lv = S.levels[mod] || 1;
+    var l3 = h.slice(-3), l2 = h.slice(-2);
+    if(l3.length===3 && l3.every(function(t){return t===0;}) && lv<3){ S.levels[mod]=lv+1; S.hist[mod]=[]; }
+    else if(l2.length===2 && l2[0]>=2 && l2[1]>=2 && lv>1){ S.levels[mod]=lv-1; S.hist[mod]=[]; }
+  }
+  save();
+}
+
+/* ---------------- Session ---------------- */
+var Q = [], QI = 0, sessStart = 0;
+function startSession(){
+  var mods = MODS.filter(function(m){ return S.settings.mods[m] && (m!=='photos' || PHOTOS.length>0); });
+  if(!mods.length) mods = ['pairs'];
+  var hasPhotos = mods.indexOf('photos')>=0;
+  mods = shuffle(mods.filter(function(m){ return m!=='photos'; }));
+  if(hasPhotos) mods.unshift('photos'); // a warm start with family
+  mods = mods.slice(0, S.settings.perSession);
+  Q = [];
+  mods.forEach(function(m){ for(var i=0;i<S.settings.rounds;i++) Q.push(m); });
+  QI = 0; sessStart = Date.now();
+  $('prompt').textContent=''; setStage(); renderDots(); show('play');
+  setTimeout(nextTask, 1300);
+}
+function renderDots(){
+  var d = $('dots'); d.innerHTML='';
+  for(var i=0;i<Q.length;i++){ d.appendChild(div('dot' + (i<QI-1 ? ' done' : (i===QI-1 ? ' now' : '')))); }
+}
+function nextTask(){
+  if(!isOn('play')) return;
+  if(QI >= Q.length){ endSession(); return; }
+  var m = Q[QI++]; renderDots();
+  ({ photos:modPhotos, pairs:modPairs, together:modTogether, seq:modSeq, pattern:modPattern, odd:modOdd })[m]();
+}
+function endSession(){
+  R = null; clearIdle();
+  var D = dayRec(); D.s++; D.m += Math.max(1, Math.round((Date.now()-sessStart)/60000));
+  S.flowers = (S.flowers||0) + 1;
+  var keys = Object.keys(S.days).sort(); while(keys.length>120){ delete S.days[keys.shift()]; }
+  save();
+  renderGarden($('garden'), 30, true);
+  show('end'); bigChime();
+  setTimeout(function(){ say(T('endSay')); }, 600);
+}
+function renderGarden(el, max, animateNew){
+  el.innerHTML='';
+  var n = S.flowers||0, k = Math.min(n, max);
+  for(var i=n-k;i<n;i++){
+    var s = document.createElement('span'); s.textContent = FLOWERS[i % FLOWERS.length];
+    if(animateNew && i===n-1) s.className='new';
+    el.appendChild(s);
+  }
+}
+
+/* ---------------- Choice helper ---------------- */
+function choices(parent, items, ci, hintText, onWin){
+  var g = mkGrid(parent, items.length), me = R;
+  var btns = items.map(function(it,i){
+    var b = card(it); g.appendChild(b);
+    onTap(b, function(){ if(me.done) return; tick(); if(i===ci) win(); else miss(); });
+    return b;
+  });
+  function win(){ if(me.done) return; btns[ci].classList.add('right'); clearGlow(); if(onWin) onWin(btns[ci]); roundDone(); }
+  me.hint = function(l){
+    glow([btns[ci]]);
+    if(l>=2) say(hintText);
+    if(l>=3) setTimeout(function(){ if(R===me && !me.done) win(); }, 2600);
+  };
+  return btns;
+}
+
+/* ---------------- Activity: Family photos ---------------- */
+function modPhotos(){
+  if(!PHOTOS.length){ nextTask(); return; }
+  newRound('photos'); var me=R, st=setStage(), L=lvl('photos');
+  var tgt = pickFresh('ph', PHOTOS);
+  var others = PHOTOS.filter(function(p){ return p.name!==tgt.name; });
+  if(L===1 || !others.length){
+    var box = div('bigphoto'); var im=document.createElement('img'); im.src=tgt.data; im.alt=''; box.appendChild(im); st.appendChild(box);
+    st.appendChild(div('pname', tgt.name));
+    var h = document.createElement('button'); h.className='heart'; h.textContent=T('lovely'); st.appendChild(h);
+    onTap(h, function(){ if(me.done) return; tick(); h.classList.add('right'); roundDone(); });
+    me.hint = function(l){ glow([h]); if(l>=2) say(T('heart')); };
+    ask('This is '+tgt.name+'. '+T('heart'), 'This is '+tgt.name);
+    return;
+  }
+  var pool=[]; shuffle(others.slice()).forEach(function(p){ if(!pool.some(function(q){return q.name===p.name;})) pool.push(p); });
+  var k = (L===3 && pool.length>=2) ? 3 : 2;
+  var opts = [tgt].concat(pool.slice(0,k-1));
+  var order = shuffle(opts.slice());
+  var items = order.map(function(p){ return { img:p.data, n:p.name, nolabel:true }; });
+  choices(st, items, order.indexOf(tgt), 'Here is '+tgt.name+'.', function(b){
+    var l=document.createElement('span'); l.className='lbl'; l.textContent=tgt.name; b.appendChild(l);
+  });
+  ask('Where is '+tgt.name+'?');
+}
+
+/* ---------------- Activity: Find the pair ---------------- */
+function modPairs(){
+  var L=lvl('pairs'), down=(L===3), np=(L===2)?3:2;
+  var items;
+  if(PHOTOS.length>=np && S.settings.mods.photos && Math.random()<0.4){
+    var ph=[]; shuffle(PHOTOS.slice()).forEach(function(p){ if(ph.length<np && !ph.some(function(q){return q.name===p.name;})) ph.push(p); });
+    if(ph.length===np) items = ph.map(function(p){ return { img:p.data, n:p.name, k:'p'+p.id }; });
+  }
+  if(!items) items = shuffle(PAIRPOOL.slice()).slice(0,np).map(function(x){ return { e:x.e, n:x.n, k:x.n }; });
+  var deck = shuffle(items.concat(items));
+  newRound('pairs'); var me=R, st=setStage(), g=mkGrid(st, deck.length);
+  var cards=[], sel=null, left=np, open=[];
+  deck.forEach(function(it){
+    var b=card(it); b._k=it.k; b._n=it.n; if(down) b.classList.add('down');
+    cards.push(b); g.appendChild(b);
+    onTap(b, function(){ if(me.done || b._m) return; if(down) tapDown(b); else tapUp(b); });
+  });
+  function twin(b){ for(var i=0;i<cards.length;i++){ if(cards[i]!==b && cards[i]._k===b._k && !cards[i]._m) return cards[i]; } return null; }
+  function firstOpen(){ for(var i=0;i<cards.length;i++){ if(!cards[i]._m) return cards[i]; } return null; }
+  function match(a,b){
+    a._m=b._m=true;
+    [a,b].forEach(function(x){ x.classList.remove('sel','down','glow'); x.classList.add('matched'); });
+    stepOk(); left--;
+    if(left===0){ if(down) me.tries=Math.max(0, me.tries-1); roundDone(); }
+    else { softChime(); say(pick(['Yes!','Good!',"That's right!"])); }
+  }
+  function tapUp(b){
+    tick();
+    if(!sel){ sel=b; b.classList.add('sel'); say(b._n+'. Now find the other one.'); return; }
+    if(b===sel) return;
+    if(b._k===sel._k){ var a=sel; sel=null; match(a,b); } else miss();
+  }
+  function tapDown(b){
+    if(open.length>=2 || open.indexOf(b)>=0) return;
+    tick(); b.classList.remove('down'); open.push(b); say(b._n);
+    if(open.length===2){
+      var a=open[0], c=open[1];
+      if(a._k===c._k){ open=[]; busy=true; setTimeout(function(){ busy=false; match(a,c); }, 500); }
+      else {
+        me.tries++; me.st++; busy=true;
+        setTimeout(function(){ a.classList.add('down'); c.classList.add('down'); open=[]; busy=false; if(me.st>=2){ me.st=0; peek(); } }, 1500);
+      }
+    }
+  }
+  function peek(){
+    if(open.length || me.done) return;
+    busy=true; say(T('peek'));
+    cards.forEach(function(x){ if(!x._m) x.classList.remove('down'); });
+    setTimeout(function(){ cards.forEach(function(x){ if(!x._m) x.classList.add('down'); }); busy=false; }, 2600);
+  }
+  me.hint = function(l){
+    if(down){ if(l>=2) peek(); return; }
+    var a = sel || firstOpen(); if(!a) return; var t = twin(a);
+    glow(sel ? [t] : [a,t]);
+    if(l>=2) say('Look. These two are the same.');
+    if(l>=3) setTimeout(function(){
+      if(R!==me || me.done || !t || t._m) return;
+      if(sel && sel!==a){ sel.classList.remove('sel'); }
+      sel=null; a.classList.remove('sel'); match(a,t);
+    }, 2600);
+  };
+  ask(down ? T('pairsDown') : T('pairsUp'), down ? 'Find two cards that match' : 'Find two that are the same');
+}
+
+/* ---------------- Activity: What goes together ---------------- */
+function modTogether(){
+  var L=lvl('together'), nc=L+1, p=pickFresh('tog', TOG);
+  newRound('together'); var st=setStage();
+  var row = div('tgtRow');
+  row.appendChild(card({e:p[0], n:p[1]}, 'div'));
+  row.appendChild(div('plusq','+ ?'));
+  st.appendChild(row);
+  var right = {e:p[2], n:p[3]};
+  var opts = [right].concat(shuffle(NEUTRAL.slice()).slice(0, nc-1));
+  var order = shuffle(opts.slice());
+  choices(st, order, order.indexOf(right), 'Look. The '+lc(p[3])+' goes with the '+lc(p[1])+'.');
+  ask('What goes with the '+lc(p[1])+'?');
+}
+
+/* ---------------- Activity: Finish the pattern ---------------- */
+function modPattern(){
+  var L=lvl('pattern'), sy=shuffle(SYM.slice()), a=sy[0], b=sy[1], c=sy[2], seq, ans, nc;
+  if(L<3){
+    if(Math.random()<0.5){ seq=[a,b,a,b]; ans=a; } else { seq=[a,b,a,b,a]; ans=b; }
+    nc = (L===1) ? 2 : 3;
+  } else {
+    if(Math.random()<0.5){ seq=[a,b,c,a,b]; ans=c; } else { seq=[a,a,b,a,a]; ans=b; }
+    nc = 3;
+  }
+  newRound('pattern'); var st=setStage();
+  var row = div('prow');
+  seq.forEach(function(x){ row.appendChild(div('pcell', x.e)); });
+  var q = div('pcell q', '?'); row.appendChild(q);
+  st.appendChild(row);
+  var wrong = sy.filter(function(x){ return x!==ans; });
+  // prefer a symbol from the pattern as one of the wrong options, so it is a real choice
+  var inPat = wrong.filter(function(x){ return seq.indexOf(x)>=0; });
+  var outPat = wrong.filter(function(x){ return seq.indexOf(x)<0; });
+  var opts = [ans].concat(inPat.concat(outPat).slice(0, nc-1));
+  var order = shuffle(opts.slice());
+  choices(st, order, order.indexOf(ans), 'Look. '+ans.s.charAt(0).toUpperCase()+ans.s.slice(1)+' comes next.', function(){
+    q.textContent = ans.e; q.classList.add('filled');
+  });
+  ask(T('pattern'));
+}
+
+/* ---------------- Activity: Which one is different ---------------- */
+function modOdd(){
+  var L=lvl('odd'), keys=Object.keys(CATS), ka, kb;
+  if(L===3){ ka = pick(Object.keys(CLOSE)); kb = pick(CLOSE[ka]); }
+  else {
+    ka = pick(keys);
+    do { kb = pick(keys); } while(kb===ka || (CLOSE[ka] && CLOSE[ka].indexOf(kb)>=0) || (CLOSE[kb] && CLOSE[kb].indexOf(ka)>=0));
+  }
+  var n = (L===1) ? 2 : 3;
+  var same = shuffle(CATS[ka].items.slice()).slice(0,n);
+  var odd = pick(CATS[kb].items);
+  var items = shuffle(same.concat([odd]));
+  newRound('odd'); var st=setStage();
+  choices(st, items, items.indexOf(odd), 'The '+lc(odd.n)+' is different. The others are all '+CATS[ka].pl+'.');
+  ask(T('odd'));
+}
+
+/* ---------------- Activity: Put the steps in order ---------------- */
+function modSeq(){
+  var L=lvl('seq'), s=(L===3) ? pickFresh('s4',SEQ4) : pickFresh('s3',SEQ3), pre=(L!==2);
+  var steps = s.s.map(function(x,i){ return { e:x[0], n:x[1], i:i }; });
+  var n=steps.length, p=0;
+  newRound('seq'); var me=R, st=setStage();
+  var slots=div('slots'), sl=[];
+  for(var i=0;i<n;i++){ var d=div('slot', String(i+1)); slots.appendChild(d); sl.push(d); }
+  st.appendChild(slots);
+  function fill(i){ var d=sl[i]; d.className='slot full'; d.innerHTML=''; d.appendChild(div('se', steps[i].e)); d.appendChild(div('sn', String(i+1))); }
+  if(pre){ fill(0); p=1; }
+  var rem = shuffle(steps.slice(p)), g=mkGrid(st, rem.length), btns={};
+  rem.forEach(function(it){
+    var b=card(it); btns[it.i]=b; g.appendChild(b);
+    onTap(b, function(){ if(me.done || b._used) return; tick(); if(it.i===p) place(); else miss(); });
+  });
+  function place(){
+    var b=btns[p]; b._used=true; b.classList.add('used'); fill(p); stepOk();
+    var said = steps[p].n + '.'; p++;
+    if(p>=n){ roundDone(); return; }
+    softChime();
+    me.instr = T('next');
+    $('prompt').textContent = s.t + '. ' + T('next');
+    say(said + ' ' + T('next')); armIdle();
+  }
+  me.hint = function(l){
+    if(p>=n) return;
+    glow([btns[p]]);
+    if(l>=2) say('Next: '+lc(steps[p].n)+'.');
+    if(l>=3) setTimeout(function(){ if(R===me && !me.done && !btns[p]._used) place(); }, 2600);
+  };
+  if(pre) ask(s.t+'. First: '+lc(steps[0].n)+'. '+T('next'), s.t+'. '+T('next'));
+  else ask(s.t+'. '+T('first'));
+}
+
+/* ---------------- Home ---------------- */
+function renderHome(){
+  var h = new Date().getHours();
+  $('greet').textContent = h<12 ? T('morning') : (h<17 ? T('afternoon') : T('evening'));
+  renderGarden($('homeGarden'), 14, false);
+  var n = S.flowers||0;
+  $('homeNote').textContent = n ? ('Your garden has ' + n + (n===1?' flower':' flowers')) : 'Your garden is ready to grow';
+}
+
+/* ---------------- Caregiver ---------------- */
+var holdT = null;
+(function(){
+  var c = $('corner');
+  function startHold(e){ clearTimeout(holdT); holdT = setTimeout(openCare, 3000); }
+  function stopHold(){ clearTimeout(holdT); }
+  c.addEventListener('pointerdown', startHold);
+  ['pointerup','pointerleave','pointercancel'].forEach(function(ev){ c.addEventListener(ev, stopHold); });
+  c.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+})();
+
+function openCare(){
+  hush(); clearIdle(); R=null; busy=false; $('praise').classList.remove('on');
+  show('care'); $('care').scrollTop=0; renderCare();
+}
+function closeCare(){ renderHome(); show('home'); }
+
+function renderCare(){
+  var b = $('careBody'), h='';
+  // Photos
+  h += '<div class="cs"><h2>Family photos</h2>'
+     + '<p class="note">Photos are kept only on this phone and never uploaded. Use a clear photo of one face and a short name she knows, for example "Ali" or "Grandson Ali". Leave out anyone whose photo might upset her.</p>'
+     + '<div id="phList"></div>'
+     + '<button class="btn pri" id="addPh">+ Add a photo</button>'
+     + '<div id="phForm" class="phform" style="display:none"><img id="phPrev" alt="">'
+     + '<input type="text" id="phName" placeholder="Name to say, e.g. Ali" maxlength="30" autocomplete="off">'
+     + '<div><button class="btn pri" id="phSave">Save photo</button><button class="btn" id="phCancel">Cancel</button></div></div></div>';
+  // Activities
+  h += '<div class="cs"><h2>Activities</h2><p class="note">Difficulty is set automatically. Choose a fixed level only if Auto feels too hard or too easy.</p>';
+  MODS.forEach(function(m){
+    var fx = S.settings.fixed[m] || '';
+    h += '<div class="row"><label><input type="checkbox" data-mod="'+m+'"'+(S.settings.mods[m]?' checked':'')+'>'+MOD_NAME[m]+'</label>'
+       + '<select data-lv="'+m+'">'
+       + '<option value=""'+(fx===''?' selected':'')+'>Auto (now '+(S.levels[m]||1)+')</option>'
+       + '<option value="1"'+(fx==1?' selected':'')+'>1 Easy</option>'
+       + '<option value="2"'+(fx==2?' selected':'')+'>2 Medium</option>'
+       + '<option value="3"'+(fx==3?' selected':'')+'>3 Harder</option></select></div>';
+  });
+  h += '</div>';
+  // Session
+  h += '<div class="cs"><h2>Session length</h2>'
+     + '<div class="row">Activities per session<select id="perS">'+[2,3,4,5,6].map(function(v){return '<option'+(S.settings.perSession==v?' selected':'')+'>'+v+'</option>';}).join('')+'</select></div>'
+     + '<div class="row">Rounds of each activity<select id="rounds">'+[1,2,3].map(function(v){return '<option'+(S.settings.rounds==v?' selected':'')+'>'+v+'</option>';}).join('')+'</select></div>'
+     + '<p class="note">4 activities with 2 rounds each takes about 5 to 8 minutes.</p></div>';
+  // Voice
+  h += '<div class="cs"><h2>Voice</h2>'
+     + '<div class="row"><label><input type="checkbox" id="spk"'+(S.settings.speech?' checked':'')+'>Read instructions aloud</label></div>'
+     + '<div class="row">Speed<select id="rate">'
+     + [[0.75,'Slow'],[0.85,'Gentle'],[1,'Normal']].map(function(o){return '<option value="'+o[0]+'"'+(S.settings.rate==o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')
+     + '</select></div><button class="btn" id="testV">Test the voice</button></div>';
+  // Progress
+  h += '<div class="cs"><h2>Progress</h2><div class="row">Flowers in her garden<b>'+(S.flowers||0)+'</b></div>';
+  var bars='', mx=1, days=[], week={s:0,m:0};
+  for(var i=13;i>=0;i--){ var d=new Date(); d.setDate(d.getDate()-i); var r=S.days[dkey(d)]||{s:0,m:0,r:0,f:0}; days.push({d:d,r:r}); if(r.s>mx) mx=r.s; if(i<7){ week.s+=r.s; week.m+=r.m; } }
+  days.forEach(function(x){ bars += '<div class="bcol"><div class="bar" style="height:'+Math.round(100*x.r.s/mx)+'%"></div><div class="bday">'+'SMTWTFS'.charAt(x.d.getDay())+'</div></div>'; });
+  h += '<div class="row">Last 7 days<b>'+week.s+' sessions, '+week.m+' min</b></div>'
+     + '<p class="note">Sessions per day, last 14 days</p><div class="bars">'+bars+'</div>';
+  MODS.forEach(function(m){
+    var hi=S.hist[m]||[]; var ok=hi.filter(function(t){return t===0;}).length;
+    h += '<div class="row">'+MOD_NAME[m]+'<span>Level '+lvl(m)+(hi.length?' · '+ok+' of '+hi.length+' first try':'')+'</span></div>';
+  });
+  h += '<p class="note">This is a rough guide only, not a medical measure. A steady change over several weeks is worth mentioning to her doctor.</p></div>';
+  // Setup
+  h += '<div class="cs"><h2>Setting up her iPhone</h2><ol class="tips">'
+     + '<li><b>Install:</b> open the link in <b>Safari</b>, tap the Share button, then <b>Add to Home Screen</b>. Always open it from that icon. Photos and progress belong to the installed app, not to Safari.</li>'
+     + '<li><b>Lock her into the app:</b> Settings, Accessibility, Guided Access, turn it on and set a passcode. Open Daily Garden, triple-click the side button, tap Start. Triple-click and enter the passcode to leave.</li>'
+     + '<li><b>Sound:</b> make sure the phone is not on silent and the volume is up. Tap Test the voice above.</li>'
+     + '<li><b>Fewer interruptions:</b> turn on Do Not Disturb while she plays, and set Auto-Lock to 5 minutes or longer.</li>'
+     + '<li>It works without internet once installed.</li></ol></div>';
+  // Reset
+  h += '<div class="cs"><h2>Start over</h2><p class="note">Clears levels, progress and flowers. Photos are kept.</p><button class="btn bad" id="resetP">Reset progress</button></div>';
+  b.innerHTML = h;
+  renderPhotoList();
+
+  $('addPh').onclick = function(){ $('photoFile').value=''; $('photoFile').click(); };
+  $('phCancel').onclick = function(){ pendingPhoto=null; $('phForm').style.display='none'; };
+  $('phSave').onclick = savePendingPhoto;
+  var cbs = b.querySelectorAll('[data-mod]');
+  for(var i=0;i<cbs.length;i++) cbs[i].onchange = function(){ S.settings.mods[this.getAttribute('data-mod')] = this.checked; save(); };
+  var sels = b.querySelectorAll('[data-lv]');
+  for(var j=0;j<sels.length;j++) sels[j].onchange = function(){ var m=this.getAttribute('data-lv'); if(this.value) S.settings.fixed[m]=parseInt(this.value,10); else delete S.settings.fixed[m]; save(); };
+  $('perS').onchange = function(){ S.settings.perSession=parseInt(this.value,10); save(); };
+  $('rounds').onchange = function(){ S.settings.rounds=parseInt(this.value,10); save(); };
+  $('spk').onchange = function(){ S.settings.speech=this.checked; save(); };
+  $('rate').onchange = function(){ S.settings.rate=parseFloat(this.value); save(); };
+  $('testV').onclick = function(){ audioInit(); pickVoice(); var was=S.settings.speech; S.settings.speech=true; say('Hello. This is how I will sound.'); S.settings.speech=was; chime(); };
+  $('resetP').onclick = function(){
+    if(!confirm('Reset all progress and flowers? Photos are kept.')) return;
+    var keep=S.settings; S=clone(DEF); S.settings=keep; save(); renderCare();
+  };
+}
+function renderPhotoList(){
+  var l=$('phList'); if(!l) return; l.innerHTML='';
+  if(!PHOTOS.length){ l.appendChild(div('note','No photos yet. The family photo activity starts once you add at least one.')); return; }
+  PHOTOS.forEach(function(p){
+    var r=div('ph'); var im=document.createElement('img'); im.src=p.data; im.alt=''; r.appendChild(im);
+    r.appendChild(div('nm', p.name));
+    var x=document.createElement('button'); x.className='btn bad'; x.textContent='Remove';
+    x.onclick=function(){ if(!confirm('Remove this photo of '+p.name+'?')) return; delPhoto(p.id, function(){ loadPhotos(renderPhotoList); }); };
+    r.appendChild(x); l.appendChild(r);
+  });
+  if(PHOTOS.length===1) l.appendChild(div('note','Add a second person to unlock the "Where is...?" game.'));
+}
+var pendingPhoto = null;
+$('photoFile').addEventListener('change', function(){
+  var f=this.files && this.files[0]; if(!f) return;
+  resizeFile(f, function(data){
+    if(!data){ alert('Sorry, that photo could not be read. Please try another one.'); return; }
+    pendingPhoto=data; $('phPrev').src=data; $('phName').value=''; $('phForm').style.display='flex';
+    setTimeout(function(){ $('phName').focus(); }, 100);
+  });
+});
+function savePendingPhoto(){
+  var name=$('phName').value.trim();
+  if(!pendingPhoto) return;
+  if(!name){ alert('Please type the name you want her to hear.'); return; }
+  var p={ id:Date.now()+'-'+Math.floor(Math.random()*1e6), name:name, data:pendingPhoto, t:Date.now() };
+  putPhoto(p, function(ok){
+    if(!ok){ alert('The photo could not be saved. The phone may be low on space.'); return; }
+    pendingPhoto=null; $('phForm').style.display='none'; loadPhotos(renderPhotoList);
+  });
+}
+function resizeFile(file, cb){
+  var url; try{ url=URL.createObjectURL(file); }catch(e){ cb(null); return; }
+  var img=new Image();
+  img.onload=function(){
+    var m=900, w=img.naturalWidth, h=img.naturalHeight, s=Math.min(1, m/Math.max(w,h));
+    var cv=document.createElement('canvas'); cv.width=Math.round(w*s); cv.height=Math.round(h*s);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    URL.revokeObjectURL(url);
+    try{ cb(cv.toDataURL('image/jpeg',0.82)); }catch(e){ cb(null); }
+  };
+  img.onerror=function(){ URL.revokeObjectURL(url); cb(null); };
+  img.src=url;
+}
+
+/* ---------------- Wiring ---------------- */
+onTap($('startBtn'), function(){
+  audioInit(); pickVoice(); tick();
+  say(T('begin'));            // first speech must happen inside a tap on iPhone
+  startSession();
+});
+onTap($('sayBtn'), function(){ if(R && !R.done) say(R.instr); });
+onTap($('doneBtn'), function(){ hush(); renderHome(); show('home'); });
+$('careBack').onclick = closeCare;
+$('careBack2').onclick = closeCare;
+document.addEventListener('visibilitychange', function(){ if(!document.hidden && isOn('home')) renderHome(); });
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+document.addEventListener('dblclick', function(e){ e.preventDefault(); });
+
+try{ if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } }catch(e){}
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+renderHome();
+loadPhotos();
+</script>
+</body>
+</html>
