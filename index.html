@@ -71,7 +71,10 @@ button.card:active{transform:scale(.97)}
 .lbl{font-size:24px;font-weight:700;line-height:1.1;text-align:center}
 .g1x3 .card{flex-direction:row;gap:18px;justify-content:flex-start;padding-left:22px}
 .g1x3 .emo{font-size:min(15vw,8vh)}
-.g1x3 .lbl{font-size:28px;text-align:left}
+.g1x3 .lbl{font-size:28px;text-align:start}
+[dir=rtl] .g1x3 .card{padding-left:6px;padding-right:22px}
+[dir=rtl] .lbl{font-size:26px}
+[dir=rtl] .prompt{font-size:32px}
 .card.sel{border-color:var(--blue);box-shadow:0 0 0 5px var(--blue)}
 .card.right{border-color:var(--green2);background:var(--done)}
 .card.matched{border-color:var(--green2);background:var(--done);opacity:.6}
@@ -173,12 +176,12 @@ ol.tips li{font-size:16px;line-height:1.45;margin:6px 0;color:#3d362c}
 
 <!-- HOME -->
 <section id="home" class="screen on">
-  <header class="hdr"><span>Daily Garden</span><span class="ver">v1.0</span></header>
+  <header class="hdr"><span id="appName">Daily Garden</span><span class="ver">v1.1</span></header>
   <div class="hello">
     <div id="greet" class="greet">Hello</div>
-    <div class="sub">Ready for some gentle games?</div>
+    <div id="subT" class="sub">Ready for some gentle games?</div>
   </div>
-  <button id="startBtn" class="start" aria-label="Start"><span class="startIcon">🌷</span><span>Start</span></button>
+  <button id="startBtn" class="start" aria-label="Start"><span class="startIcon">🌷</span><span id="startT">Start</span></button>
   <div id="homeGarden" class="minigarden"></div>
   <div id="homeNote" class="gnote"></div>
 </section>
@@ -198,15 +201,15 @@ ol.tips li{font-size:16px;line-height:1.45;margin:6px 0;color:#3d362c}
 
 <!-- END -->
 <section id="end" class="screen">
-  <div class="endT">You did it!</div>
-  <div class="endS">A new flower grew in your garden.</div>
+  <div id="endT" class="endT">You did it!</div>
+  <div id="endS" class="endS">A new flower grew in your garden.</div>
   <div id="garden" class="garden"></div>
   <button id="doneBtn" class="big">Done</button>
 </section>
 
 <!-- CAREGIVER -->
-<section id="care" class="screen">
-  <h1>Family settings <span class="ver">v1.0</span></h1>
+<section id="care" class="screen" dir="ltr" lang="en">
+  <h1>Family settings <span class="ver">v1.1</span></h1>
   <p>This page is for family only. She will not see it unless someone holds the top right corner for 3 seconds.</p>
   <button id="careBack" class="btn pri wide">Back to her app</button>
   <div id="careBody"></div>
@@ -217,84 +220,136 @@ ol.tips li{font-size:16px;line-height:1.45;margin:6px 0;color:#3d362c}
 
 <script>
 /* =========================================================
-   Daily Garden v1.0
+   Daily Garden v1.1
    Gentle brain games for someone living with Alzheimer's.
    Offline, no accounts, nothing leaves the phone.
    ========================================================= */
-var VERSION = '1.0';
+var VERSION = '1.1';
 var KEY = 'dg_state_v1';
-var LANG = 'en'; // Arabic to be added later: every spoken/visible phrase lives in STR or the content lists
-
-var STR = { en: {
+function cap(s){ s=String(s); return s.charAt(0).toUpperCase()+s.slice(1); }
+var STR = {
+ en: {
+  dir:'ltr', app:'Daily Garden',
   morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening',
-  begin:"Let's begin.",
-  pairsUp:'Find two pictures that are the same.',
-  pairsDown:'Find two cards that match. Tap a card to turn it over.',
+  sub:'Ready for some gentle games?', start:'Start', begin:"Let's begin.",
+  pairsUp:'Find two pictures that are the same.', pairsUpD:'Find two that are the same',
+  pairsDown:'Find two cards that match. Tap a card to turn it over.', pairsDownD:'Find two cards that match',
+  pairSel:function(n){ return n+'. Now find the other one.'; },
+  pairHint:'Look. These two are the same.', pairYes:['Yes!','Good!',"That's right!"],
   peek:"Let's take a peek.",
-  odd:'Which one is different?',
-  pattern:'What comes next?',
-  next:'What happens next?',
-  first:'What happens first?',
-  heart:'Tap the heart.',
-  lovely:'❤️  Lovely',
-  endSay:'You did it! A new flower grew in your garden. See you next time.'
-}};
-function T(k){ return (STR[LANG] && STR[LANG][k]) || STR.en[k] || k; }
+  togQ:function(x){ return 'What goes with '+x.d+'?'; },
+  togH:function(y,x){ return 'Look. '+cap(y.d)+' goes with '+x.d+'.'; },
+  pattern:'What comes next?', patH:function(s){ return 'Look. '+cap(s.d)+' comes next.'; },
+  odd:'Which one is different?', oddH:function(o,pl){ return cap(o.d)+' is different. The others are all '+pl+'.'; },
+  next:'What happens next?', first:'What happens first?',
+  seqPre:function(t,s0){ return t+'. First: '+lc(s0)+'. What happens next?'; },
+  seqHint:function(s){ return 'Next: '+lc(s)+'.'; },
+  photoThis:function(n){ return 'This is '+n+'.'; }, photoWhere:function(n){ return 'Where is '+n+'?'; }, photoHere:function(n){ return 'Here is '+n+'.'; },
+  heart:'Tap the heart.', lovely:'❤️  Lovely',
+  praise:['Wonderful!','Well done!','Lovely!','Beautiful!','Perfect!','Very good!','You did it!'],
+  endT:'You did it!', endS:'A new flower grew in your garden.', done:'Done',
+  endSay:'You did it! A new flower grew in your garden. See you next time.',
+  gardenN:function(n){ return 'Your garden has '+n+(n===1?' flower':' flowers'); }, gardenEmpty:'Your garden is ready to grow',
+  voiceTest:'Hello. This is how I will sound.', hear:'Hear it again'
+ },
+ ar: {
+  dir:'rtl', app:'حديقتي',
+  morning:'صباح الخير', afternoon:'مساء الخير', evening:'مساء الخير',
+  sub:'هل أنتِ مستعدة لبعض الألعاب اللطيفة؟', start:'ابدئي', begin:'هيا نبدأ.',
+  pairsUp:'ابحثي عن صورتين متشابهتين.', pairsUpD:'ابحثي عن صورتين متشابهتين',
+  pairsDown:'ابحثي عن بطاقتين متشابهتين. اضغطي على البطاقة لقلبها.', pairsDownD:'ابحثي عن بطاقتين متشابهتين',
+  pairSel:function(n){ return n+'. الآن ابحثي عن الأخرى.'; },
+  pairHint:'انظري. هاتان متشابهتان.', pairYes:['نعم!','أحسنتِ!','صحيح!'],
+  peek:'لنلقِ نظرة.',
+  togQ:function(x){ return 'ما الذي يناسب '+x.d+'؟'; },
+  togH:function(y,x){ return 'انظري. '+y.d+' مع '+x.d+'.'; },
+  pattern:'ماذا يأتي بعد ذلك؟', patH:function(s){ return 'انظري. التالي: '+s.d+'.'; },
+  odd:'أيّها مختلف؟', oddH:function(o,pl){ return 'انظري هنا: '+o.d+'. البقية كلها '+pl+'.'; },
+  next:'ماذا يحدث بعد ذلك؟', first:'ماذا يحدث أولاً؟',
+  seqPre:function(t,s0){ return t+'. أولاً: '+s0+'. ماذا يحدث بعد ذلك؟'; },
+  seqHint:function(s){ return 'التالي: '+s+'.'; },
+  photoThis:function(n){ return 'هذه صورة '+n+'.'; }, photoWhere:function(n){ return 'أين '+n+'؟'; }, photoHere:function(n){ return 'هنا '+n+'.'; },
+  heart:'اضغطي على القلب.', lovely:'❤️  جميل',
+  praise:['رائع!','أحسنتِ!','جميل جداً!','ممتاز!','ما شاء الله!','أنتِ رائعة!'],
+  endT:'أحسنتِ!', endS:'نمت زهرة جديدة في حديقتك.', done:'تم',
+  endSay:'أحسنتِ! نمت زهرة جديدة في حديقتك. نراكِ في المرة القادمة.',
+  gardenN:function(n){ return 'عدد الزهور في حديقتك: '+n; }, gardenEmpty:'حديقتك جاهزة لتنمو',
+  voiceTest:'مرحباً. هكذا سيكون صوتي.', hear:'اسمعي مرة أخرى'
+ }
+};
+var LANG = 'en';
+function T(k){ var v=(STR[LANG] && STR[LANG][k]!=null) ? STR[LANG][k] : STR.en[k]; return v==null ? k : v; }
+function F(k){ var f=T(k); return typeof f==='function' ? f.apply(null, [].slice.call(arguments,1)) : f; }
 
-var PRAISE = ['Wonderful!','Well done!','Lovely!','Beautiful!','Perfect!','Very good!','You did it!'];
 var PICONS = ['🌟','🌷','🌻','💐','🌼','⭐','🌸'];
 var FLOWERS = ['🌷','🌻','🌼','🌸','🌹','🌺','💐'];
 
-/* ---------------- Content ---------------- */
-function mk(list){ return list.map(function(x){ return { e:x[0], n:x[1] }; }); }
-var CATS = {
-  fruit:   { pl:'fruit',      items: mk([['🍎','Apple'],['🍌','Banana'],['🍊','Orange'],['🍇','Grapes'],['🍉','Watermelon'],['🍓','Strawberry'],['🍐','Pear'],['🍒','Cherries']]) },
-  veg:     { pl:'vegetables', items: mk([['🥕','Carrot'],['🥔','Potato'],['🧅','Onion'],['🥦','Broccoli'],['🥬','Lettuce'],['🧄','Garlic'],['🥒','Cucumber']]) },
-  clothes: { pl:'clothes',    items: mk([['👕','Shirt'],['👗','Dress'],['👖','Trousers'],['🧦','Socks'],['🧣','Scarf'],['🧥','Coat'],['👒','Hat'],['👞','Shoes']]) },
-  animals: { pl:'animals',    items: mk([['🐈','Cat'],['🐕','Dog'],['🐄','Cow'],['🐎','Horse'],['🐑','Sheep'],['🐇','Rabbit']]) },
-  vehicles:{ pl:'things we travel in', items: mk([['🚗','Car'],['🚌','Bus'],['🚲','Bicycle'],['✈️','Aeroplane'],['🚢','Ship'],['🚂','Train']]) },
-  kitchen: { pl:'things for the kitchen', items: mk([['🥄','Spoon'],['🍴','Fork'],['☕','Cup'],['🫖','Teapot'],['🍳','Pan'],['🥣','Bowl']]) },
-  flowers: { pl:'flowers',    items: mk([['🌹','Rose'],['🌷','Tulip'],['🌻','Sunflower'],['🌼','Daisy'],['🌸','Blossom'],['🌺','Hibiscus']]) }
+/* ---------------- Content (both languages) ----------------
+   Each item: [emoji, English, Arabic, optional Arabic "the ..." form for sentences] */
+var RAW = {
+ cats: {
+  fruit:   { en:'fruit', ar:'فواكه', items:[['🍎','Apple','تفاحة'],['🍌','Banana','موزة'],['🍊','Orange','برتقالة'],['🍇','Grapes','عنب'],['🍉','Watermelon','بطيخ'],['🍓','Strawberry','فراولة'],['🍐','Pear','كمثرى'],['🍒','Cherries','كرز']] },
+  veg:     { en:'vegetables', ar:'خضروات', items:[['🥕','Carrot','جزر'],['🥔','Potato','بطاطس'],['🧅','Onion','بصل'],['🥦','Broccoli','بروكلي'],['🥬','Lettuce','خس'],['🧄','Garlic','ثوم'],['🥒','Cucumber','خيار']] },
+  clothes: { en:'clothes', ar:'ملابس', items:[['👕','Shirt','قميص'],['👗','Dress','فستان'],['👖','Trousers','بنطلون'],['🧦','Socks','جوارب'],['🧣','Scarf','وشاح'],['🧥','Coat','معطف'],['👒','Hat','قبعة'],['👞','Shoes','حذاء']] },
+  animals: { en:'animals', ar:'حيوانات', items:[['🐈','Cat','قطة'],['🐕','Dog','كلب'],['🐄','Cow','بقرة'],['🐎','Horse','حصان'],['🐑','Sheep','خروف'],['🐇','Rabbit','أرنب']] },
+  vehicles:{ en:'things we travel in', ar:'وسائل نقل', items:[['🚗','Car','سيارة'],['🚌','Bus','حافلة'],['🚲','Bicycle','دراجة'],['✈️','Aeroplane','طائرة'],['🚢','Ship','سفينة'],['🚂','Train','قطار']] },
+  kitchen: { en:'things for the kitchen', ar:'أدوات مطبخ', items:[['🥄','Spoon','ملعقة'],['🍴','Fork','شوكة'],['☕','Cup','كوب'],['🫖','Teapot','إبريق شاي','إبريق الشاي'],['🍳','Pan','مقلاة'],['🥣','Bowl','وعاء']] },
+  flowers: { en:'flowers', ar:'زهور', items:[['🌹','Rose','وردة'],['🌷','Tulip','توليب'],['🌻','Sunflower','عباد الشمس','عباد الشمس'],['🌼','Daisy','أقحوان'],['🌸','Blossom','زهرة الكرز','زهرة الكرز'],['🌺','Hibiscus','كركديه']] }
+ },
+ tog: [
+  [['☕','Cup','كوب'],['🫖','Teapot','إبريق شاي','إبريق الشاي']], [['🔑','Key','مفتاح'],['🚪','Door','باب']],
+  [['🧦','Sock','جورب'],['👟','Shoe','حذاء']], [['✏️','Pencil','قلم'],['📄','Paper','ورقة']],
+  [['🐝','Bee','نحلة'],['🌻','Flower','زهرة']], [['🌧️','Rain','مطر'],['☂️','Umbrella','مظلة']],
+  [['🍞','Bread','خبز'],['🧈','Butter','زبدة']], [['🐄','Cow','بقرة'],['🥛','Milk','حليب']],
+  [['🥄','Spoon','ملعقة'],['🥣','Bowl','وعاء']], [['🐕','Dog','كلب'],['🦴','Bone','عظمة']],
+  [['🎂','Cake','كعكة'],['🕯️','Candle','شمعة']], [['🧵','Thread','خيط'],['🪡','Needle','إبرة']],
+  [['🐟','Fish','سمكة'],['🌊','Sea','بحر']], [['🖌️','Brush','فرشاة'],['🎨','Paint','ألوان']],
+  [['✉️','Letter','رسالة'],['📮','Postbox','صندوق بريد','صندوق البريد']], [['🐔','Hen','دجاجة'],['🥚','Egg','بيضة']],
+  [['🌙','Moon','قمر'],['⭐','Stars','نجوم']]
+ ],
+ // Wrong choices for "what goes together": everyday things that do not pair with any target
+ neutral: [['🚗','Car','سيارة'],['🧸','Teddy bear','دبدوب'],['🪑','Chair','كرسي'],['🕰️','Clock','ساعة'],['🌵','Cactus','صبار'],['🎸','Guitar','جيتار'],
+  ['🚲','Bicycle','دراجة'],['👓','Glasses','نظارة'],['🧲','Magnet','مغناطيس'],['🔨','Hammer','مطرقة'],['🧩','Puzzle','أحجية'],['🪁','Kite','طائرة ورقية','الطائرة الورقية']],
+ sym: [['🔴','Red','أحمر','الدائرة الحمراء','the red circle'],['🔵','Blue','أزرق','الدائرة الزرقاء','the blue circle'],['🟡','Yellow','أصفر','الدائرة الصفراء','the yellow circle'],
+  ['🟢','Green','أخضر','الدائرة الخضراء','the green circle'],['⭐','Star','نجمة','النجمة','the star'],['❤️','Heart','قلب','القلب','the heart'],
+  ['🍎','Apple','تفاحة','التفاحة','the apple'],['🌙','Moon','قمر','القمر','the moon']],
+ seq3: [
+  {en:'Growing a flower', ar:'زراعة زهرة', s:[['🌱','Plant the seed','ازرعي البذرة'],['💧','Water it','اسقيها بالماء'],['🌷','A flower grows','تنمو زهرة']]},
+  {en:'Washing hands', ar:'غسل اليدين', s:[['🚰','Turn on the tap','افتحي الصنبور'],['🧼','Wash with soap','اغسلي بالصابون'],['🧻','Dry your hands','جففي يديك']]},
+  {en:'A chick is born', ar:'ولادة كتكوت', s:[['🥚','An egg','بيضة'],['🐣','The chick hatches','يفقس الكتكوت'],['🐔','It grows into a hen','يكبر ويصبح دجاجة']]},
+  {en:'The morning', ar:'الصباح', s:[['🛏️','Wake up','استيقظي'],['🪥','Brush your teeth','نظفي أسنانك'],['🍳','Eat breakfast','تناولي الفطور']]},
+  {en:'Cooking dinner', ar:'تحضير العشاء', s:[['🛒','Buy the food','اشتري الطعام'],['🍲','Cook the food','اطبخي الطعام'],['🍽️','Eat dinner','تناولي العشاء']]},
+  {en:'The day', ar:'اليوم', s:[['🌅','Sunrise','شروق الشمس'],['☀️','Midday','الظهر'],['🌙','Night','الليل']]},
+  {en:'Sending a letter', ar:'إرسال رسالة', s:[['✍️','Write the letter','اكتبي الرسالة'],['✉️','Put it in an envelope','ضعيها في الظرف'],['📮','Post it','أرسليها بالبريد']]}
+ ],
+ seq4: [
+  {en:'Making tea', ar:'تحضير الشاي', s:[['🚰','Fill the kettle','املئي الغلاية'],['🔥','Boil the water','اغلي الماء'],['🫖','Pour the tea','صبي الشاي'],['☕','Drink the tea','اشربي الشاي']]},
+  {en:'Getting ready', ar:'الاستعداد لليوم', s:[['🛏️','Wake up','استيقظي'],['🚿','Have a wash','اغتسلي'],['👗','Get dressed','البسي ملابسك'],['🍳','Eat breakfast','تناولي الفطور']]},
+  {en:'Baking a cake', ar:'خبز كعكة', s:[['🥚','Get the eggs','أحضري البيض'],['🥣','Mix everything','اخلطي المكونات'],['🔥','Bake in the oven','اخبزيها في الفرن'],['🎂','Eat the cake','كلي الكعكة']]},
+  {en:'Doing the washing', ar:'غسل الملابس', s:[['👕','Dirty clothes','ملابس متسخة'],['🧺','Wash them','اغسليها'],['☀️','Hang them to dry','انشريها لتجف'],['👔','Fold them','اطويها']]},
+  {en:'Growing a flower', ar:'زراعة زهرة', s:[['🌱','Plant the seed','ازرعي البذرة'],['💧','Water it','اسقيها بالماء'],['🌿','It starts to grow','تبدأ بالنمو'],['🌷','A flower opens','تتفتح الزهرة']]},
+  {en:'Going shopping', ar:'التسوق', s:[['📝','Write a list','اكتبي القائمة'],['🛒','Go to the shop','اذهبي إلى السوق'],['🛍️','Carry the bags','احملي الأكياس'],['🏠','Come home','عودي إلى البيت']]}
+ ]
 };
 var CLOSE = { fruit:['veg'], veg:['fruit'], flowers:['fruit','veg'] };
+var CATS, PAIRPOOL, TOG, NEUTRAL, SYM, SEQ3, SEQ4;
 
-var PAIRPOOL = [].concat(CATS.fruit.items, CATS.animals.items, CATS.flowers.items, CATS.kitchen.items, CATS.vehicles.items, CATS.clothes.items);
-
-// [emoji, name, partner emoji, partner name]
-var TOG = [
-  ['☕','Cup','🫖','Teapot'], ['🔑','Key','🚪','Door'], ['🧦','Sock','👟','Shoe'], ['✏️','Pencil','📄','Paper'],
-  ['🐝','Bee','🌻','Flower'], ['🌧️','Rain','☂️','Umbrella'], ['🍞','Bread','🧈','Butter'], ['🐄','Cow','🥛','Milk'],
-  ['🥄','Spoon','🥣','Bowl'], ['🐕','Dog','🦴','Bone'], ['🎂','Cake','🕯️','Candle'], ['🧵','Thread','🪡','Needle'],
-  ['🐟','Fish','🌊','Sea'], ['🖌️','Brush','🎨','Paint'], ['✉️','Letter','📮','Postbox'], ['🐔','Hen','🥚','Egg'],
-  ['🌙','Moon','⭐','Stars']
-];
-// Wrong choices for "what goes together": everyday things that do not pair with any target above
-var NEUTRAL = mk([['🚗','Car'],['🧸','Teddy bear'],['🪑','Chair'],['🕰️','Clock'],['🌵','Cactus'],['🎸','Guitar'],
-  ['🚲','Bicycle'],['👓','Glasses'],['🧲','Magnet'],['🔨','Hammer'],['🧩','Puzzle'],['🪁','Kite']]);
-
-var SYM = [
-  {e:'🔴',n:'Red',s:'the red circle'}, {e:'🔵',n:'Blue',s:'the blue circle'}, {e:'🟡',n:'Yellow',s:'the yellow circle'},
-  {e:'🟢',n:'Green',s:'the green circle'}, {e:'⭐',n:'Star',s:'the star'}, {e:'❤️',n:'Heart',s:'the heart'},
-  {e:'🍎',n:'Apple',s:'the apple'}, {e:'🌙',n:'Moon',s:'the moon'}
-];
-
-var SEQ3 = [
-  {t:'Growing a flower', s:[['🌱','Plant the seed'],['💧','Water it'],['🌷','A flower grows']]},
-  {t:'Washing hands',    s:[['🚰','Turn on the tap'],['🧼','Wash with soap'],['🧻','Dry your hands']]},
-  {t:'A chick is born',  s:[['🥚','An egg'],['🐣','The chick hatches'],['🐔','It grows into a hen']]},
-  {t:'The morning',      s:[['🛏️','Wake up'],['🪥','Brush your teeth'],['🍳','Eat breakfast']]},
-  {t:'Cooking dinner',   s:[['🛒','Buy the food'],['🍲','Cook the food'],['🍽️','Eat dinner']]},
-  {t:'The day',          s:[['🌅','Sunrise'],['☀️','Midday'],['🌙','Night']]},
-  {t:'Sending a letter', s:[['✍️','Write the letter'],['✉️','Put it in an envelope'],['📮','Post it']]}
-];
-var SEQ4 = [
-  {t:'Making tea',        s:[['🚰','Fill the kettle'],['🔥','Boil the water'],['🫖','Pour the tea'],['☕','Drink the tea']]},
-  {t:'Getting ready',     s:[['🛏️','Wake up'],['🚿','Have a wash'],['👗','Get dressed'],['🍳','Eat breakfast']]},
-  {t:'Baking a cake',     s:[['🥚','Get the eggs'],['🥣','Mix everything'],['🔥','Bake in the oven'],['🎂','Eat the cake']]},
-  {t:'Doing the washing', s:[['👕','Dirty clothes'],['🧺','Wash them'],['☀️','Hang them to dry'],['👔','Fold them']]},
-  {t:'Growing a flower',  s:[['🌱','Plant the seed'],['💧','Water it'],['🌿','It starts to grow'],['🌷','A flower opens']]},
-  {t:'Going shopping',    s:[['📝','Write a list'],['🛒','Go to the shop'],['🛍️','Carry the bags'],['🏠','Come home']]}
-];
+// Turn a raw item into { e, n (label), d (form used inside sentences) } for the current language
+function it(x){
+  if(LANG==='ar'){ var n=x[2]; return { e:x[0], n:n, d: x[3] || (n.indexOf('ال')===0 ? n : 'ال'+n) }; }
+  return { e:x[0], n:x[1], d:'the '+lc(x[1]) };
+}
+function buildContent(){
+  CATS = {};
+  Object.keys(RAW.cats).forEach(function(k){ var c=RAW.cats[k]; CATS[k] = { pl:c[LANG]||c.en, items:c.items.map(it) }; });
+  PAIRPOOL = [].concat(CATS.fruit.items, CATS.animals.items, CATS.flowers.items, CATS.kitchen.items, CATS.vehicles.items, CATS.clothes.items);
+  TOG = RAW.tog.map(function(p){ return { a:it(p[0]), b:it(p[1]) }; });
+  NEUTRAL = RAW.neutral.map(it);
+  SYM = RAW.sym.map(function(x){ return LANG==='ar' ? { e:x[0], n:x[2], d:x[3] } : { e:x[0], n:x[1], d:x[4] }; });
+  function sq(q){ return { t:q[LANG]||q.en, s:q.s.map(function(x){ return [x[0], LANG==='ar' ? x[2] : x[1]]; }) }; }
+  SEQ3 = RAW.seq3.map(sq); SEQ4 = RAW.seq4.map(sq);
+  recent = {};
+}
 
 var MODS = ['photos','pairs','together','seq','pattern','odd'];
 var MOD_NAME = { photos:'Family photos', pairs:'Find the pair', together:'What goes together',
@@ -302,7 +357,7 @@ var MOD_NAME = { photos:'Family photos', pairs:'Find the pair', together:'What g
 
 /* ---------------- State ---------------- */
 var DEF = {
-  settings:{ speech:true, rate:0.85, perSession:4, rounds:2,
+  settings:{ lang:'en', speech:true, rate:0.85, perSession:4, rounds:2,
     mods:{ photos:true, pairs:true, together:true, seq:true, pattern:true, odd:true }, fixed:{} },
   levels:{ photos:1, pairs:1, together:1, seq:1, pattern:1, odd:1 },
   hist:{}, days:{}, flowers:0
@@ -363,8 +418,8 @@ var VOICE = null;
 function pickVoice(){
   try{
     var vs = speechSynthesis.getVoices() || [];
-    var en = vs.filter(function(v){ return /^en/i.test(v.lang); });
-    var pref = ['Samantha','Karen','Moira','Serena','Kate','Tessa','Daniel'];
+    var en = vs.filter(function(v){ return LANG==='ar' ? /^ar/i.test(v.lang) : /^en/i.test(v.lang); });
+    var pref = LANG==='ar' ? ['Laila','Mariam','Majed','Maged','Tarik'] : ['Samantha','Karen','Moira','Serena','Kate','Tessa','Daniel'];
     VOICE = null;
     for(var i=0;i<pref.length && !VOICE;i++){ for(var j=0;j<en.length;j++){ if(en[j].name.indexOf(pref[i])===0){ VOICE=en[j]; break; } } }
     if(!VOICE && en.length) VOICE = en[0];
@@ -376,7 +431,7 @@ function say(text, cb){
   try{
     if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    if(VOICE){ u.voice=VOICE; u.lang=VOICE.lang; } else { u.lang='en-GB'; }
+    if(VOICE){ u.voice=VOICE; u.lang=VOICE.lang; } else { u.lang = (LANG==='ar') ? 'ar-SA' : 'en-GB'; }
     u.rate = S.settings.rate; u.pitch = 1; u.volume = 1;
     u.onend = fin; u.onerror = fin;
     if(cb) setTimeout(fin, 1800 + text.length*95/S.settings.rate);
@@ -459,7 +514,7 @@ function roundDone(){
   record(R.mod, R.tries);
   busy = true; chime();
   setTimeout(function(){
-    var p = pick(PRAISE);
+    var p = pick(T('praise'));
     $('ptext').textContent = p;
     var ic = $('picon'); ic.textContent = pick(PICONS); ic.style.animation='none'; void ic.offsetHeight; ic.style.animation='';
     $('praise').classList.add('on'); say(p);
@@ -556,7 +611,7 @@ function modPhotos(){
     var h = document.createElement('button'); h.className='heart'; h.textContent=T('lovely'); st.appendChild(h);
     onTap(h, function(){ if(me.done) return; tick(); h.classList.add('right'); roundDone(); });
     me.hint = function(l){ glow([h]); if(l>=2) say(T('heart')); };
-    ask('This is '+tgt.name+'. '+T('heart'), 'This is '+tgt.name);
+    ask(F('photoThis',tgt.name)+' '+T('heart'), F('photoThis',tgt.name).replace(/\.$/,''));
     return;
   }
   var pool=[]; shuffle(others.slice()).forEach(function(p){ if(!pool.some(function(q){return q.name===p.name;})) pool.push(p); });
@@ -564,10 +619,10 @@ function modPhotos(){
   var opts = [tgt].concat(pool.slice(0,k-1));
   var order = shuffle(opts.slice());
   var items = order.map(function(p){ return { img:p.data, n:p.name, nolabel:true }; });
-  choices(st, items, order.indexOf(tgt), 'Here is '+tgt.name+'.', function(b){
+  choices(st, items, order.indexOf(tgt), F('photoHere',tgt.name), function(b){
     var l=document.createElement('span'); l.className='lbl'; l.textContent=tgt.name; b.appendChild(l);
   });
-  ask('Where is '+tgt.name+'?');
+  ask(F('photoWhere',tgt.name));
 }
 
 /* ---------------- Activity: Find the pair ---------------- */
@@ -594,11 +649,11 @@ function modPairs(){
     [a,b].forEach(function(x){ x.classList.remove('sel','down','glow'); x.classList.add('matched'); });
     stepOk(); left--;
     if(left===0){ if(down) me.tries=Math.max(0, me.tries-1); roundDone(); }
-    else { softChime(); say(pick(['Yes!','Good!',"That's right!"])); }
+    else { softChime(); say(pick(T('pairYes'))); }
   }
   function tapUp(b){
     tick();
-    if(!sel){ sel=b; b.classList.add('sel'); say(b._n+'. Now find the other one.'); return; }
+    if(!sel){ sel=b; b.classList.add('sel'); say(F('pairSel',b._n)); return; }
     if(b===sel) return;
     if(b._k===sel._k){ var a=sel; sel=null; match(a,b); } else miss();
   }
@@ -624,14 +679,14 @@ function modPairs(){
     if(down){ if(l>=2) peek(); return; }
     var a = sel || firstOpen(); if(!a) return; var t = twin(a);
     glow(sel ? [t] : [a,t]);
-    if(l>=2) say('Look. These two are the same.');
+    if(l>=2) say(T('pairHint'));
     if(l>=3) setTimeout(function(){
       if(R!==me || me.done || !t || t._m) return;
       if(sel && sel!==a){ sel.classList.remove('sel'); }
       sel=null; a.classList.remove('sel'); match(a,t);
     }, 2600);
   };
-  ask(down ? T('pairsDown') : T('pairsUp'), down ? 'Find two cards that match' : 'Find two that are the same');
+  ask(down ? T('pairsDown') : T('pairsUp'), down ? T('pairsDownD') : T('pairsUpD'));
 }
 
 /* ---------------- Activity: What goes together ---------------- */
@@ -639,14 +694,14 @@ function modTogether(){
   var L=lvl('together'), nc=L+1, p=pickFresh('tog', TOG);
   newRound('together'); var st=setStage();
   var row = div('tgtRow');
-  row.appendChild(card({e:p[0], n:p[1]}, 'div'));
+  row.appendChild(card(p.a, 'div'));
   row.appendChild(div('plusq','+ ?'));
   st.appendChild(row);
-  var right = {e:p[2], n:p[3]};
+  var right = p.b;
   var opts = [right].concat(shuffle(NEUTRAL.slice()).slice(0, nc-1));
   var order = shuffle(opts.slice());
-  choices(st, order, order.indexOf(right), 'Look. The '+lc(p[3])+' goes with the '+lc(p[1])+'.');
-  ask('What goes with the '+lc(p[1])+'?');
+  choices(st, order, order.indexOf(right), F('togH',p.b,p.a));
+  ask(F('togQ',p.a));
 }
 
 /* ---------------- Activity: Finish the pattern ---------------- */
@@ -670,7 +725,7 @@ function modPattern(){
   var outPat = wrong.filter(function(x){ return seq.indexOf(x)<0; });
   var opts = [ans].concat(inPat.concat(outPat).slice(0, nc-1));
   var order = shuffle(opts.slice());
-  choices(st, order, order.indexOf(ans), 'Look. '+ans.s.charAt(0).toUpperCase()+ans.s.slice(1)+' comes next.', function(){
+  choices(st, order, order.indexOf(ans), F('patH',ans), function(){
     q.textContent = ans.e; q.classList.add('filled');
   });
   ask(T('pattern'));
@@ -689,7 +744,7 @@ function modOdd(){
   var odd = pick(CATS[kb].items);
   var items = shuffle(same.concat([odd]));
   newRound('odd'); var st=setStage();
-  choices(st, items, items.indexOf(odd), 'The '+lc(odd.n)+' is different. The others are all '+CATS[ka].pl+'.');
+  choices(st, items, items.indexOf(odd), F('oddH',odd,CATS[ka].pl));
   ask(T('odd'));
 }
 
@@ -721,20 +776,34 @@ function modSeq(){
   me.hint = function(l){
     if(p>=n) return;
     glow([btns[p]]);
-    if(l>=2) say('Next: '+lc(steps[p].n)+'.');
+    if(l>=2) say(F('seqHint',steps[p].n));
     if(l>=3) setTimeout(function(){ if(R===me && !me.done && !btns[p]._used) place(); }, 2600);
   };
-  if(pre) ask(s.t+'. First: '+lc(steps[0].n)+'. '+T('next'), s.t+'. '+T('next'));
+  if(pre) ask(F('seqPre',s.t,steps[0].n), s.t+'. '+T('next'));
   else ask(s.t+'. '+T('first'));
 }
 
 /* ---------------- Home ---------------- */
+function applyLang(){
+  LANG = (S.settings.lang==='ar') ? 'ar' : 'en';
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = T('dir');
+  $('appName').textContent = T('app');
+  $('subT').textContent = T('sub');
+  $('startT').textContent = T('start');
+  $('startBtn').setAttribute('aria-label', T('start'));
+  $('sayBtn').setAttribute('aria-label', T('hear'));
+  $('endT').textContent = T('endT');
+  $('endS').textContent = T('endS');
+  $('doneBtn').textContent = T('done');
+  buildContent(); pickVoice();
+}
 function renderHome(){
   var h = new Date().getHours();
   $('greet').textContent = h<12 ? T('morning') : (h<17 ? T('afternoon') : T('evening'));
   renderGarden($('homeGarden'), 14, false);
   var n = S.flowers||0;
-  $('homeNote').textContent = n ? ('Your garden has ' + n + (n===1?' flower':' flowers')) : 'Your garden is ready to grow';
+  $('homeNote').textContent = n ? F('gardenN',n) : T('gardenEmpty');
 }
 
 /* ---------------- Caregiver ---------------- */
@@ -756,13 +825,18 @@ function closeCare(){ renderHome(); show('home'); }
 
 function renderCare(){
   var b = $('careBody'), h='';
+  // Language
+  h += '<div class="cs"><h2>Language / \u0627\u0644\u0644\u063a\u0629</h2><div class="row">Her app speaks and shows<select id="langSel">'
+     + '<option value="en"'+(LANG==='en'?' selected':'')+'>English</option>'
+     + '<option value="ar"'+(LANG==='ar'?' selected':'')+'>\u0627\u0644\u0639\u0631\u0628\u064a\u0629 (Arabic)</option></select></div>'
+     + '<p class="note">This settings page stays in English. For Arabic speech the iPhone needs an Arabic voice: Settings, Accessibility, Spoken Content, Voices, Arabic. Then tap Test the voice.</p></div>';
   // Photos
   h += '<div class="cs"><h2>Family photos</h2>'
      + '<p class="note">Photos are kept only on this phone and never uploaded. Use a clear photo of one face and a short name she knows, for example "Ali" or "Grandson Ali". Leave out anyone whose photo might upset her.</p>'
      + '<div id="phList"></div>'
      + '<button class="btn pri" id="addPh">+ Add a photo</button>'
      + '<div id="phForm" class="phform" style="display:none"><img id="phPrev" alt="">'
-     + '<input type="text" id="phName" placeholder="Name to say, e.g. Ali" maxlength="30" autocomplete="off">'
+     + '<input type="text" id="phName" placeholder="Name to say, e.g. Ali or \u0639\u0644\u064a" maxlength="30" autocomplete="off">'
      + '<div><button class="btn pri" id="phSave">Save photo</button><button class="btn" id="phCancel">Cancel</button></div></div></div>';
   // Activities
   h += '<div class="cs"><h2>Activities</h2><p class="note">Difficulty is set automatically. Choose a fixed level only if Auto feels too hard or too easy.</p>';
@@ -818,11 +892,12 @@ function renderCare(){
   for(var i=0;i<cbs.length;i++) cbs[i].onchange = function(){ S.settings.mods[this.getAttribute('data-mod')] = this.checked; save(); };
   var sels = b.querySelectorAll('[data-lv]');
   for(var j=0;j<sels.length;j++) sels[j].onchange = function(){ var m=this.getAttribute('data-lv'); if(this.value) S.settings.fixed[m]=parseInt(this.value,10); else delete S.settings.fixed[m]; save(); };
+  $('langSel').onchange = function(){ S.settings.lang=this.value; save(); applyLang(); renderCare(); };
   $('perS').onchange = function(){ S.settings.perSession=parseInt(this.value,10); save(); };
   $('rounds').onchange = function(){ S.settings.rounds=parseInt(this.value,10); save(); };
   $('spk').onchange = function(){ S.settings.speech=this.checked; save(); };
   $('rate').onchange = function(){ S.settings.rate=parseFloat(this.value); save(); };
-  $('testV').onclick = function(){ audioInit(); pickVoice(); var was=S.settings.speech; S.settings.speech=true; say('Hello. This is how I will sound.'); S.settings.speech=was; chime(); };
+  $('testV').onclick = function(){ audioInit(); pickVoice(); var was=S.settings.speech; S.settings.speech=true; say(T('voiceTest')); S.settings.speech=was; chime(); };
   $('resetP').onclick = function(){
     if(!confirm('Reset all progress and flowers? Photos are kept.')) return;
     var keep=S.settings; S=clone(DEF); S.settings=keep; save(); renderCare();
@@ -890,6 +965,7 @@ document.addEventListener('dblclick', function(e){ e.preventDefault(); });
 try{ if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } }catch(e){}
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+applyLang();
 renderHome();
 loadPhotos();
 </script>
